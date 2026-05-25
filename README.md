@@ -81,4 +81,3 @@ Grafana will be available at `http://YOUR_VPS_IP:3000`.
 
 - Run this on a dedicated VPS, never on your personal machine
 - Move your real SSH to a non-standard port before exposing port 22 to Cowrie
-- The `.env` file contains credentials and is gitignored — never commit it
