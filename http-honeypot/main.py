@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
+import httpx
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, PlainTextResponse
 
@@ -18,17 +19,51 @@ logger = logging.getLogger("honeypot")
 logger.setLevel(logging.INFO)
 logger.addHandler(file_handler)
 
+# --- geo lookup ---
 
-def log_request(request: Request, body: str, response_code: int):
+_geo_cache: dict = {}
+_PRIVATE_PREFIXES = ("10.", "172.", "192.168.", "127.", "::1", "fd", "fc")
+
+
+async def geo_lookup(ip: str) -> dict:
+    if any(ip.startswith(p) for p in _PRIVATE_PREFIXES):
+        return {"country": "", "city": "", "latitude": None, "longitude": None}
+    if ip in _geo_cache:
+        return _geo_cache[ip]
+    try:
+        async with httpx.AsyncClient(timeout=2) as client:
+            r = await client.get(f"http://ip-api.com/json/{ip}?fields=country,city,lat,lon")
+            d = r.json()
+            result = {
+                "country": d.get("country", ""),
+                "city": d.get("city", ""),
+                "latitude": d.get("lat"),
+                "longitude": d.get("lon"),
+            }
+    except Exception:
+        result = {"country": "", "city": "", "latitude": None, "longitude": None}
+    _geo_cache[ip] = result
+    return result
+
+
+# --- request logger ---
+
+async def log_request(request: Request, body: str, response_code: int):
+    ip = request.headers.get("x-forwarded-for", request.client.host)
+    geo = await geo_lookup(ip)
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "src_ip": request.headers.get("x-forwarded-for", request.client.host),
+        "src_ip": ip,
         "method": request.method,
         "path": request.url.path,
         "query": str(request.url.query),
         "user_agent": request.headers.get("user-agent", ""),
-        "body": body[:500],  # cap at 500 chars to avoid huge log entries
+        "body": body[:500],
         "response_code": response_code,
+        "country": geo["country"],
+        "city": geo["city"],
+        "latitude": geo["latitude"],
+        "longitude": geo["longitude"],
     }
     logger.info(json.dumps(entry))
 
@@ -105,20 +140,20 @@ async def catch_all(request: Request, path: str):
     p = "/" + path.lstrip("/")
 
     if p == "/.env":
-        log_request(request, body, 200)
+        await log_request(request, body, 200)
         return PlainTextResponse(FAKE_ENV, status_code=200)
 
     if p in ("/wp-login.php", "/wp-admin/", "/wp-admin"):
-        log_request(request, body, 200)
+        await log_request(request, body, 200)
         return HTMLResponse(FAKE_WP_LOGIN, status_code=200)
 
     if p in ("/admin", "/admin/", "/administrator", "/login", "/phpmyadmin", "/phpmyadmin/"):
-        log_request(request, body, 200)
+        await log_request(request, body, 200)
         return HTMLResponse(FAKE_LOGIN_PAGE, status_code=200)
 
     if p in ("/.git/config", "/config.php", "/config.json", "/backup.sql"):
-        log_request(request, body, 403)
+        await log_request(request, body, 403)
         return PlainTextResponse("Forbidden", status_code=403)
 
-    log_request(request, body, 404)
+    await log_request(request, body, 404)
     return HTMLResponse(FAKE_404, status_code=404)

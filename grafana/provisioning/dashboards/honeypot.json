@@ -162,10 +162,62 @@
       ]
     },
     {
+      "id": 8,
+      "title": "Attack Origins Map",
+      "type": "geomap",
+      "gridPos": {"x": 0, "y": 20, "w": 24, "h": 12},
+      "datasource": {"type": "loki", "uid": "loki"},
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{job=\"http-honeypot\"} | json | latitude != \"\" | longitude != \"\"",
+          "queryType": "range"
+        }
+      ],
+      "options": {
+        "view": {"id": "zero", "lat": 0, "lon": 0, "zoom": 1},
+        "controls": {"mouseWheelZoom": true, "showZoom": true, "showAttribution": true},
+        "basemap": {"type": "default"},
+        "layers": [
+          {
+            "type": "markers",
+            "name": "Attacks",
+            "config": {
+              "style": {
+                "size": {"fixed": 6},
+                "color": {"fixed": "red"},
+                "opacity": 0.8
+              },
+              "showLegend": true
+            },
+            "location": {
+              "mode": "coords",
+              "latitude": "latitude",
+              "longitude": "longitude"
+            },
+            "tooltip": true
+          }
+        ]
+      },
+      "fieldConfig": {"defaults": {}, "overrides": []},
+      "transformations": [
+        {"id": "labelsToFields", "options": {"mode": "columns"}},
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {"targetField": "latitude", "destinationType": "number"},
+              {"targetField": "longitude", "destinationType": "number"}
+            ]
+          }
+        }
+      ]
+    },
+    {
       "id": 7,
       "title": "Recent Events",
       "type": "logs",
-      "gridPos": {"x": 0, "y": 20, "w": 24, "h": 10},
+      "gridPos": {"x": 0, "y": 32, "w": 24, "h": 10},
       "datasource": {"type": "loki", "uid": "loki"},
       "targets": [
         {
