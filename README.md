@@ -1,6 +1,35 @@
 # Honeypot
 
-A dockerized honeypot that monitors and logs connection attempts on SSH and HTTP, with real-time attack visualization using Grafana.
+A dockerized honeypot that monitors and logs real-world attack attempts on SSH and HTTP, with live visualization using Grafana.
+
+Built by **Alberto Erbusti**
+
+![Dashboard](screenshots/dashboard.png)
+
+## What it does
+
+Exposes two decoy services on a public VPS:
+
+- **SSH (port 22)** — powered by [Cowrie](https://github.com/cowrie/cowrie), a medium-interaction honeypot. Accepts any login attempt, simulates a fake Linux shell, and logs every command and credential the attacker tries.
+- **HTTP (port 80)** — a custom Python service that mimics a vulnerable web server. Returns convincing fake responses for common attack targets (`/.env`, `/wp-admin`, `/phpmyadmin`, etc.) and logs every request with IP geolocation data.
+
+All logs are shipped through **Promtail → Loki** and visualized in a **Grafana** dashboard showing:
+- Attack volume over time
+- Top attacking IPs
+- Most-tried SSH credentials
+- Most-scanned HTTP paths
+- Live world map of attack origins
+
+## Stack
+
+| Component | Role |
+|---|---|
+| Cowrie | SSH honeypot |
+| Python / FastAPI | HTTP honeypot |
+| Promtail | Log shipping |
+| Loki | Log aggregation |
+| Grafana | Visualization |
+| Docker Compose | Orchestration |
 
 ## Architecture
 
@@ -29,14 +58,6 @@ A dockerized honeypot that monitors and logs connection attempts on SSH and HTTP
 └─────────────────────────────────────────────────────┘
 ```
 
-## Services
-
-- **Cowrie** — medium-interaction SSH honeypot. Accepts any login, simulates a fake shell, logs all commands and credentials attempted by attackers.
-- **HTTP Honeypot** — custom Python service that simulates a vulnerable web server. Logs every request path, method, headers, and body.
-- **Promtail** — tails JSON log files from both honeypots and ships them to Loki.
-- **Loki** — log aggregation backend, stores and indexes logs by labels.
-- **Grafana** — dashboard for visualizing attacks in real time (top IPs, attempted credentials, scanned paths, attack timeline).
-
 ## Setup
 
 ### Requirements
@@ -49,13 +70,14 @@ A dockerized honeypot that monitors and logs connection attempts on SSH and HTTP
 git clone https://github.com/albierbi/honeypot.git
 cd honeypot
 cp .env.example .env
-# Edit .env with your settings
+nano .env  # set your Grafana password
+mkdir -p logs/cowrie logs/http
 docker compose up -d
 ```
 
 Grafana will be available at `http://YOUR_VPS_IP:3000`.
 
-## Security notes
+### Security notes
 
 - Run this on a dedicated VPS, never on your personal machine
 - Move your real SSH to a non-standard port before exposing port 22 to Cowrie
