@@ -37,3 +37,11 @@ querier:
 
 query_range:
   parallelise_shardable_queries: false
+
+# Compactor neutralized: on this single-node setup its 10-min index
+# rewrites orphan older chunks from the live querier until a restart.
+# No retention is needed, so push compaction effectively out of reach.
+compactor:
+  working_directory: /loki/compactor
+  compaction_interval: 8760h
+  retention_enabled: false
