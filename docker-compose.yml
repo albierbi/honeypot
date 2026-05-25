@@ -35,7 +35,7 @@ services:
     volumes:
       - ./promtail/config.yml:/etc/promtail/config.yml:ro
       - ./logs:/logs:ro
-      - ./promtail/positions.yaml:/tmp/positions.yaml
+      - ./promtail/data:/promtail-data
     networks:
       - honeypot-net
     depends_on:

@@ -3,4 +3,4 @@ logs/
 *.log
 grafana/data/
 loki/data/
-promtail/positions.yaml
+promtail/data/
