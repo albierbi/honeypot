@@ -1,0 +1,27 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+
+  - job_name: cowrie
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: cowrie
+          __path__: /logs/cowrie/cowrie.json
+
+  - job_name: http-honeypot
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: http-honeypot
+          __path__: /logs/http/http.json

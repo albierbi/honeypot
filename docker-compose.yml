@@ -1,0 +1,66 @@
+services:
+
+  cowrie:
+    image: cowrie/cowrie:latest
+    ports:
+      - "22:2222"
+    volumes:
+      - ./cowrie/cowrie.cfg:/cowrie/etc/cowrie.cfg:ro
+      - ./logs/cowrie:/cowrie/var/log/cowrie
+    networks:
+      - honeypot-net
+    restart: unless-stopped
+
+  http-honeypot:
+    build: ./http-honeypot
+    ports:
+      - "80:80"
+    volumes:
+      - ./logs/http:/app/logs
+    networks:
+      - honeypot-net
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.0
+    volumes:
+      - ./loki/config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    networks:
+      - honeypot-net
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:2.9.0
+    volumes:
+      - ./promtail/config.yml:/etc/promtail/config.yml:ro
+      - ./logs:/logs:ro
+    networks:
+      - honeypot-net
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks:
+      - honeypot-net
+    depends_on:
+      - loki
+    restart: unless-stopped
+
+networks:
+  honeypot-net:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:
