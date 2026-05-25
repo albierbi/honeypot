@@ -201,7 +201,15 @@
       },
       "fieldConfig": {"defaults": {}, "overrides": []},
       "transformations": [
-        {"id": "labelsToFields", "options": {"mode": "columns"}},
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "keepTime": true,
+            "replace": false
+          }
+        },
         {
           "id": "convertFieldType",
           "options": {
