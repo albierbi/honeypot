@@ -5,8 +5,8 @@ services:
     ports:
       - "22:2222"
     volumes:
-      - ./cowrie/cowrie.cfg:/cowrie/etc/cowrie.cfg:ro
-      - ./logs/cowrie:/cowrie/var/log/cowrie
+      - ./cowrie/cowrie.cfg:/cowrie/cowrie-git/etc/cowrie.cfg:ro
+      - ./logs/cowrie:/cowrie/cowrie-git/var/log/cowrie
     networks:
       - honeypot-net
     restart: unless-stopped
